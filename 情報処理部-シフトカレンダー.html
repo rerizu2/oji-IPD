@@ -232,7 +232,7 @@
                 shiftData[key].forEach(s => {
                     if(currentFilter === 'すべて' || s.team === currentFilter) {
                         const item = document.createElement('div');
-                        item.className = `shift-item bg-${s.team==='イラスト班'?'illust':s.team==='プログラミング班'?'prog':'robot'}`;
+                        item.className = `shift-item bg-${s.team==='デザイン班'?'illust':s.team==='プログラミング班'?'prog':'robot'}`;
                         item.innerText = s.name; sList.appendChild(item);
                     }
                 });
@@ -279,7 +279,7 @@
         const targets = (currentFilter === 'すべて' || authMode === 'admin') ? members : members.filter(m => m.team === currentFilter);
         targets.forEach(m => {
             const chk = shiftData[key] && shiftData[key].some(s => s.name === m.name);
-            const teamClass = m.team === 'イラスト班' ? 'bg-illust' : m.team === 'プログラミング班' ? 'bg-prog' : 'bg-robot';
+            const teamClass = m.team === 'デザイン班' ? 'bg-illust' : m.team === 'プログラミング班' ? 'bg-prog' : 'bg-robot';
             const row = document.createElement('tr');
             row.innerHTML = `<td style="width:40%; text-align:left; font-weight:bold; padding-left:15px;">
                                 ${m.name}<br><span class="modal-team-label ${teamClass}">${m.team}</span>
