@@ -2,7 +2,7 @@
 <html lang="ja">
 <head>
     <meta charset="UTF-8">
-    <title>情報処理部リアルタイムシフトカレンダー</title>
+    <title>情報処理部 シフト管理</title>
     <style>
         :root {
             --primary-color: #3b82f6; --bg-color: #f0f2f5; --text-main: #334155;
@@ -11,78 +11,48 @@
             --shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
         }
         body { font-family: 'Helvetica Neue', Arial, sans-serif; background-color: var(--bg-color); margin: 0; padding-bottom: 80px; user-select: none; color: var(--text-main); }
-
-        /* スクロールバーの見た目調整（モダンな細めスタイル） */
         ::-webkit-scrollbar { width: 6px; }
-        ::-webkit-scrollbar-track { background: transparent; }
         ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
-        ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
 
-        /* --- ログイン --- */
         #loginView { display: flex; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: #1e293b; justify-content: center; align-items: center; z-index: 2000; }
         .login-card { background: white; padding: 40px; border-radius: 24px; text-align: center; width: 320px; box-shadow: 0 25px 50px -12px rgba(0,0,0,0.5); }
 
-        /* --- ヘッダー --- */
         #calendarView { display: none; flex-direction: column; align-items: center; padding: 20px; }
         header { width: 100%; max-width: 1000px; display: flex; justify-content: space-between; align-items: center; margin-bottom: 30px; }
-        .brand-title { cursor: help; }
-        .brand-title h1 { margin: 0; font-size: 1.8rem; color: var(--primary-color); }
+        .brand-title h1 { margin: 0; font-size: 1.8rem; color: var(--primary-color); cursor: help; }
         .status-badge { font-size: 0.8rem; padding: 4px 12px; border-radius: 20px; background: #e2e8f0; color: #64748b; font-weight: bold; }
         .mode-leader .status-badge { background: #fef3c7; color: #d97706; }
         .mode-admin .status-badge { background: #fee2e2; color: #ef4444; }
 
-        /* --- カレンダー (マス内スクロール対応) --- */
         .calendar-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 15px; width: 100%; max-width: 1000px; }
-        .weekday-label { text-align: center; font-size: 0.75rem; color: #94a3b8; font-weight: bold; padding-bottom: 5px; }
-        .day-tile { 
-            background: white; height: 130px; border-radius: 16px; padding: 10px; box-shadow: var(--shadow); 
-            border: 2px solid transparent; transition: 0.2s; display: flex; flex-direction: column;
-        }
+        .day-tile { background: white; height: 130px; border-radius: 16px; padding: 10px; box-shadow: var(--shadow); border: 2px solid transparent; transition: 0.2s; display: flex; flex-direction: column; overflow: hidden; }
         .can-edit .day-tile { cursor: pointer; }
-        .can-edit .day-tile:hover { transform: translateY(-3px); border-color: currentColor; }
         .day-tile.today { border: 2px solid var(--primary-color); background: #f0f7ff; }
-        .day-number { font-weight: bold; font-size: 1.1rem; margin-bottom: 5px; color: #475569; flex-shrink: 0; }
-        
+        .day-number { font-weight: bold; font-size: 1.1rem; margin-bottom: 5px; color: #475569; }
         .shift-container { flex-grow: 1; overflow-y: auto; display: flex; flex-direction: column; gap: 2px; }
-        .shift-item { padding: 1px 6px; border-radius: 4px; color: white; font-size: 0.7rem; font-weight: bold; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; flex-shrink: 0; }
+        .shift-item { padding: 1px 6px; border-radius: 4px; color: white; font-size: 0.7rem; font-weight: bold; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
         .bg-design { background: var(--color-design); } .bg-prog { background: var(--color-prog); } .bg-robot { background: var(--color-robot); }
 
-        /* --- フィルター --- */
         .filter-container { margin-bottom: 20px; display: flex; gap: 10px; }
-        .filter-btn { border: none; padding: 8px 20px; border-radius: 20px; cursor: pointer; background: white; font-weight: bold; box-shadow: var(--shadow); transition: 0.2s; }
+        .filter-btn { border: none; padding: 8px 20px; border-radius: 20px; cursor: pointer; background: white; font-weight: bold; box-shadow: var(--shadow); }
         .filter-btn.active[data-team="デザイン班"] { background: var(--color-design); color: white; }
         .filter-btn.active[data-team="プログラミング班"] { background: var(--color-prog); color: white; }
         .filter-btn.active[data-team="ロボット班"] { background: var(--color-robot); color: white; }
         .filter-btn.active[data-team="すべて"] { background: #334155; color: white; }
         #allViewBtn { display: none; } .mode-admin #allViewBtn { display: inline-block; }
 
-        /* --- 名簿セクション (名簿内スクロール対応) --- */
         .member-section { display: none; width: 100%; max-width: 1000px; margin-top: 50px; }
         .mode-admin .member-section { display: block; }
-        .member-lists-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; }
-        .team-banner { width: 100%; height: 60px; border-radius: 15px; color: white; font-weight: bold; display: flex; justify-content: center; align-items: center; font-size: 1.1rem; box-shadow: 0 4px 6px rgba(0,0,0,0.1); margin-bottom: 10px; }
-        
-        /* 名簿リストのスクロールエリア */
-        .member-scroll-box { max-height: 400px; overflow-y: auto; padding-right: 5px; }
+        .team-banner { width: 100%; height: 60px; border-radius: 15px; color: white; font-weight: bold; display: flex; justify-content: center; align-items: center; font-size: 1.1rem; margin-bottom: 15px; box-shadow: var(--shadow); }
         .member-card { background: white; margin-bottom: 8px; padding: 12px; border-radius: 12px; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 2px 4px rgba(0,0,0,0.05); }
-        .op-icon { cursor: pointer; padding: 4px 8px; background: #f1f5f9; border-radius: 6px; font-size: 0.8rem; }
 
-        /* --- モーダル (リスト内スクロール対応) --- */
-        #modalOverlay, #memberEditOverlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); backdrop-filter: blur(5px); justify-content: center; align-items: center; z-index: 3000; }
-        .modal-content { background: white; border-radius: 20px; width: 95%; max-width: 500px; max-height: 90vh; display: flex; flex-direction: column; overflow: hidden; box-shadow: 0 25px 50px -12px rgba(0,0,0,0.3); }
-        
-        .modal-header-table { width: 100%; border-collapse: collapse; flex-shrink: 0; }
-        .modal-header-table th { border: 1px solid var(--table-border); padding: 10px; }
-        
-        .modal-body-scroll { flex-grow: 1; overflow-y: auto; }
+        #modalOverlay, #memberEditOverlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); backdrop-filter: blur(4px); justify-content: center; align-items: center; z-index: 3000; }
+        .modal-content { background: white; border-radius: 20px; width: 95%; max-width: 480px; max-height: 90vh; overflow-y: auto; box-shadow: 0 25px 50px -12px rgba(0,0,0,0.3); }
         .attendance-table { width: 100%; border-collapse: collapse; }
-        .attendance-table td { border: 1px solid var(--table-border); padding: 8px; text-align: center; }
-        
-        .modal-footer { padding: 15px 25px; background: #f8fafc; display: flex; justify-content: flex-end; gap: 10px; border-top: 1px solid #f1f5f9; flex-shrink: 0; }
-        
-        .input-ui { width: 100%; padding: 12px; margin-top: 5px; margin-bottom: 15px; border: 1px solid #e2e8f0; border-radius: 10px; box-sizing: border-box; font-size: 1rem; }
-        .btn-ui { border: none; padding: 10px 20px; border-radius: 10px; cursor: pointer; font-weight: bold; }
+        .attendance-table th, .attendance-table td { border: 1px solid var(--table-border); padding: 8px; text-align: center; }
         .modal-team-label { font-size: 0.7rem; padding: 2px 6px; border-radius: 4px; color: white; font-weight: bold; }
+        .btn-ui { border: none; padding: 10px 20px; border-radius: 10px; cursor: pointer; font-weight: bold; }
+        .input-ui { width: 100%; padding: 12px; margin-top: 5px; margin-bottom: 15px; border: 1px solid #e2e8f0; border-radius: 10px; box-sizing: border-box; }
     </style>
 </head>
 <body id="mainBody">
@@ -107,12 +77,10 @@
         </div>
         <div style="text-align:right;">
             <h2 id="monthDisplay">2024年1月</h2>
-            <div style="margin-top:10px;">
-                <button class="btn-ui" style="background:white;" onclick="changeMonth(-1)">←</button>
-                <button class="btn-ui" style="background:white;" onclick="setToday()">今日</button>
-                <button class="btn-ui" style="background:white;" onclick="changeMonth(1)">→</button>
-                <button class="btn-ui" style="background:white; color:red; margin-left:10px;" onclick="handleLogout()">終了</button>
-            </div>
+            <button class="btn-ui" onclick="changeMonth(-1)">←</button>
+            <button class="btn-ui" onclick="setToday()">今日</button>
+            <button class="btn-ui" onclick="changeMonth(1)">→</button>
+            <button class="btn-ui" onclick="handleLogout()" style="color:red; margin-left:10px;">終了</button>
         </div>
     </header>
 
@@ -127,79 +95,29 @@
 
     <div class="member-section">
         <h2>部員名簿管理</h2>
-        <div class="member-lists-grid">
-            <div>
-                <div class="team-banner bg-design">デザイン班</div>
-                <div id="list-design" class="member-scroll-box"></div>
-                <button class="btn-ui" style="width:100%; border:2px dashed #ccc; background:none; color:#888; margin-top:10px;" onclick="openMemberModal('デザイン班')">＋新規追加</button>
-            </div>
-            <div>
-                <div class="team-banner bg-prog">プログラミング班</div>
-                <div id="list-prog" class="member-scroll-box"></div>
-                <button class="btn-ui" style="width:100%; border:2px dashed #ccc; background:none; color:#888; margin-top:10px;" onclick="openMemberModal('プログラミング班')">＋新規追加</button>
-            </div>
-            <div>
-                <div class="team-banner bg-robot">ロボット班</div>
-                <div id="list-robot" class="member-scroll-box"></div>
-                <button class="btn-ui" style="width:100%; border:2px dashed #ccc; background:none; color:#888; margin-top:10px;" onclick="openMemberModal('ロボット班')">＋新規追加</button>
-            </div>
+        <div style="display:grid; grid-template-columns: repeat(3, 1fr); gap: 20px;">
+            <div><div class="team-banner bg-design">デザイン班</div><div id="list-design"></div><button class="btn-ui" style="width:100%; border:2px dashed #ccc; background:none; color:#888;" onclick="openMemberModal('デザイン班')">＋新規追加</button></div>
+            <div><div class="team-banner bg-prog">プログラミング班</div><div id="list-prog"></div><button class="btn-ui" style="width:100%; border:2px dashed #ccc; background:none; color:#888;" onclick="openMemberModal('プログラミング班')">＋新規追加</button></div>
+            <div><div class="team-banner bg-robot">ロボット班</div><div id="list-robot"></div><button class="btn-ui" style="width:100%; border:2px dashed #ccc; background:none; color:#888;" onclick="openMemberModal('ロボット班')">＋新規追加</button></div>
         </div>
     </div>
 </div>
 
-<!-- 出席簿モーダル -->
-<div id="modalOverlay">
-    <div class="modal-content">
-        <table class="modal-header-table">
-            <thead>
-                <tr><th style="background:white; width:40%;">出席簿</th><th id="modalDateLabel" style="background:var(--table-header-bg);">日付</th></tr>
-                <tr style="background:#f1f5f9; font-size:0.8rem;">
-                    <th style="width:40%;">名前 / 班</th><th>クラス / 選択</th>
-                </tr>
-            </thead>
-        </table>
-        <div class="modal-body-scroll">
-            <table class="attendance-table">
-                <tbody id="attendanceList"></tbody>
-            </table>
-        </div>
-        <div class="modal-footer">
-            <button class="btn-ui" onclick="closeModal()">戻る</button>
-            <button id="saveShiftBtn" class="btn-ui" onclick="saveShift()" style="background:#2e7d32; color:white;">保存する</button>
-        </div>
-    </div>
-</div>
-
-<!-- 名簿管理モーダル -->
-<div id="memberEditOverlay">
-    <div class="modal-content">
-        <div style="padding:25px;">
-            <h3>名簿管理</h3>
-            氏名<input type="text" id="editName" class="input-ui" placeholder="例：奈良王寺">
-            クラス<input type="text" id="editClass" class="input-ui" placeholder="例：2IB">
-            班<select id="editTeam" class="input-ui">
-                <option value="デザイン班">デザイン班</option>
-                <option value="プログラミング班">プログラミング班</option>
-                <option value="ロボット班">ロボット班</option>
-            </select>
-        </div>
-        <div class="modal-footer">
-            <button class="btn-ui" onclick="closeMemberModal()">キャンセル</button>
-            <button id="memberSaveBtn" class="btn-ui" onclick="saveMember()" style="background:var(--primary-color); color:white;">決定</button>
-        </div>
-    </div>
-</div>
+<div id="modalOverlay"><div class="modal-content"><table class="attendance-table"><thead><tr><th style="padding:10px; border:1px solid #000;">出席簿</th><th colspan="3" id="modalDateLabel" style="background:var(--table-header-bg); border:1px solid #000;">日付</th></tr><tr style="background:#f1f5f9;"><th>名前</th><th>班</th><th>クラス</th><th>選択</th></tr></thead><tbody id="attendanceList"></tbody></table><div style="padding:15px; display:flex; justify-content:flex-end; gap:10px; background:#f8fafc;"><button class="btn-ui" onclick="closeModal()">戻る</button><button id="saveShiftBtn" class="btn-ui" onclick="saveShift()" style="background:#2e7d32; color:white;">保存</button></div></div></div>
+<div id="memberEditOverlay"><div class="modal-content"><div style="padding:25px;"><h3>名簿管理</h3>氏名<input type="text" id="editName" class="input-ui">クラス<input type="text" id="editClass" class="input-ui">班<select id="editTeam" class="input-ui"><option value="デザイン班">デザイン班</option><option value="プログラミング班">プログラミング班</option><option value="ロボット班">ロボット班</option></select></div><div style="padding:15px; display:flex; justify-content:flex-end; gap:10px; background:#f8fafc;"><button class="btn-ui" onclick="closeMemberModal()">キャンセル</button><button id="memberSaveBtn" class="btn-ui" onclick="saveMember()" style="background:var(--primary-color); color:white;">決定</button></div></div></div>
 
 <script>
-    const GAS_URL = "https://script.google.com/macros/s/AKfycbyldEFK3zkB4wlPrKSNgy5aAzeBarWfm1pjlHWCf-M2MfYLXLNcHABTzKApFRnPs5qRbg/exec";
+    // ★重要★ ここにご自身のウェブアプリURLを貼ってください
+    const GAS_URL = "ここにデプロイ後のURLを貼り付けてください";
     const API_URL = GAS_URL + "?api=true";
 
     let members = [], shiftData = {}, currentDate = new Date();
     let authMode = 'view', currentFilter = '', clickCount = 0, selectedDateKey = null, editingMemberName = null;
-    let isSaving = false;
+    let isProcessing = false;
 
+    // --- リアルタイム同期: データ読み込み ---
     async function loadData() {
-        if (isSaving) return;
+        if (isProcessing) return;
         try {
             const res = await fetch(API_URL);
             const data = await res.json();
@@ -207,10 +125,11 @@
             data.shifts.forEach(s => { if(!shiftData[s.date]) shiftData[s.date]=[]; shiftData[s.date].push(s); });
             members = data.members;
             renderAll();
-        } catch(e) { console.error(e); renderAll(); }
+        } catch(e) { console.error("データ取得失敗", e); }
     }
 
-    setInterval(loadData, 30000);
+    // 10秒ごとに自動リフレッシュ（他の人の変更を反映）
+    setInterval(loadData, 10000);
 
     function renderAll() { renderCalendar(); renderMemberLists(); }
 
@@ -219,7 +138,7 @@
         document.getElementById('monthDisplay').innerText = `${y}年 ${m+1}月`;
         const container = document.getElementById('calendarDays'); container.innerHTML = '';
         ['SUN','MON','TUE','WED','THU','FRI','SAT'].forEach(d => {
-            const el = document.createElement('div'); el.className='weekday-label'; el.innerText=d; container.appendChild(el);
+            const el = document.createElement('div'); el.style.textAlign='center'; el.style.fontSize='0.7rem'; el.style.color='#94a3b8'; el.innerText=d; container.appendChild(el);
         });
         const firstDay = new Date(y, m, 1).getDay(), lastDate = new Date(y, m + 1, 0).getDate();
         for(let i=0; i<firstDay; i++) container.appendChild(document.createElement('div'));
@@ -232,8 +151,7 @@
                 shiftData[key].forEach(s => {
                     if(currentFilter === 'すべて' || s.team === currentFilter) {
                         const item = document.createElement('div');
-                        item.className = `shift-item bg-${s.team==='デザイン班'?'design':'prog'}`;
-                        if(s.team === 'ロボット班') item.className = 'shift-item bg-robot';
+                        item.className = `shift-item bg-${s.team==='デザイン班'?'design':(s.team==='プログラミング班'?'prog':'robot')}`;
                         item.innerText = s.name; sList.appendChild(item);
                     }
                 });
@@ -244,9 +162,8 @@
     }
 
     function renderMemberLists() {
-        const teams = ["デザイン班", "プログラミング班", "ロボット班"];
-        const ids = ["list-design", "list-prog", "list-robot"];
-        teams.forEach((team, i) => {
+        const t = ["デザイン班", "プログラミング班", "ロボット班"], ids = ["list-design", "list-prog", "list-robot"];
+        t.forEach((team, i) => {
             const c = document.getElementById(ids[i]); c.innerHTML = '';
             members.filter(m => m.team === team).forEach(m => {
                 const div = document.createElement('div'); div.className = 'member-card';
@@ -257,40 +174,40 @@
         });
     }
 
+    // --- 名簿管理 ---
     function openMemberModal(team) { editingMemberName = null; document.getElementById('editName').value = ""; document.getElementById('editClass').value = ""; document.getElementById('editTeam').value = team; document.getElementById('memberEditOverlay').style.display = 'flex'; }
     function openMemberModalEdit(name) { const m = members.find(x => x.name === name); editingMemberName = name; document.getElementById('editName').value = m.name; document.getElementById('editClass').value = m.class; document.getElementById('editTeam').value = m.team; document.getElementById('memberEditOverlay').style.display = 'flex'; }
     
     async function saveMember() {
         const n = document.getElementById('editName').value.trim();
         if(!n) return alert("氏名を入力してください");
-        isSaving = true;
+        isProcessing = true;
         const btn = document.getElementById('memberSaveBtn'); btn.disabled = true; btn.innerText = "中...";
         let tempMembers = JSON.parse(JSON.stringify(members));
         if(editingMemberName) tempMembers = tempMembers.filter(m => m.name !== editingMemberName);
         tempMembers.push({name:n, class:document.getElementById('editClass').value.trim(), team:document.getElementById('editTeam').value});
         try {
             await fetch(GAS_URL, { method: "POST", body: JSON.stringify({ type: 'saveMembers', members: tempMembers }) });
-            closeMemberModal(); await loadData(); 
-        } catch(e) { alert("保存に失敗しました"); } finally { isSaving = false; btn.disabled = false; btn.innerText = "決定"; }
+            closeMemberModal(); 
+            await loadData(); // 保存直後に再取得
+        } catch(e) { alert("保存失敗"); } finally { isProcessing = false; btn.disabled = false; btn.innerText = "決定"; }
     }
 
-    async function deleteMember(name) { if(!confirm(`${name}さんを削除？`)) return; isSaving = true; await fetch(GAS_URL, { method: "POST", body: JSON.stringify({ type: 'saveMembers', members: members.filter(m => m.name !== name) }) }); await loadData(); isSaving = false; }
+    async function deleteMember(name) { if(!confirm(`${name}さんを削除？`)) return; isProcessing = true; await fetch(GAS_URL, { method: "POST", body: JSON.stringify({ type: 'saveMembers', members: members.filter(m => m.name !== name) }) }); await loadData(); isProcessing = false; }
 
+    // --- シフト管理 ---
     function openAttendance(key, dateStr) {
         selectedDateKey = key; document.getElementById('modalDateLabel').innerText = dateStr;
         const list = document.getElementById('attendanceList'); list.innerHTML = '';
         const targets = (currentFilter === 'すべて' || authMode === 'admin') ? members : members.filter(m => m.team === currentFilter);
         targets.forEach(m => {
             const chk = shiftData[key] && shiftData[key].some(s => s.name === m.name);
-            const teamClass = m.team === 'デザイン班' ? 'bg-design' : m.team === 'プログラミング班' ? 'bg-prog' : 'bg-robot';
+            const teamClass = m.team === 'デザイン班' ? 'bg-design' : (m.team === 'プログラミング班' ? 'bg-prog' : 'bg-robot');
             const row = document.createElement('tr');
-            row.innerHTML = `<td style="width:40%; text-align:left; font-weight:bold; padding-left:15px;">
-                                ${m.name}<br><span class="modal-team-label ${teamClass}">${m.team}</span>
-                             </td>
-                             <td style="text-align:center;">
-                                ${m.class}<br>
-                                <input type="checkbox" class="sc" style="width:22px;height:22px;margin-top:5px;" data-name="${m.name}" data-class="${m.class}" data-team="${m.team}" ${chk?'checked':''}>
-                             </td>`;
+            row.innerHTML = `<td style="border:1px solid #000; font-weight:bold;">${m.name}</td>
+                <td style="border:1px solid #000; text-align:center;"><span class="modal-team-label ${teamClass}">${m.team}</span></td>
+                <td style="border:1px solid #000;">${m.class}</td>
+                <td style="border:1px solid #000;"><input type="checkbox" class="sc" style="width:20px;height:20px;" data-name="${m.name}" data-class="${m.class}" data-team="${m.team}" ${chk?'checked':''}></td>`;
             list.appendChild(row);
         });
         document.getElementById('modalOverlay').style.display = 'flex';
@@ -303,12 +220,13 @@
             const others = (shiftData[selectedDateKey] || []).filter(s => s.team !== currentFilter);
             finalList = [...others, ...checked];
         }
-        isSaving = true;
+        isProcessing = true;
         const btn = document.getElementById('saveShiftBtn'); btn.innerText = "中..."; btn.disabled = true;
         try {
             await fetch(GAS_URL, { method: "POST", body: JSON.stringify({ type:'saveShift', date:selectedDateKey, list:finalList }) });
-            closeModal(); await loadData(); 
-        } catch(e) { alert("保存に失敗しました"); } finally { isSaving = false; btn.innerText = "保存する"; btn.disabled = false; }
+            closeModal(); 
+            await loadData(); // 保存直後に再取得して全員に共有
+        } catch(e) { alert("保存失敗"); } finally { isProcessing = false; btn.innerText = "保存"; btn.disabled = false; }
     }
 
     function handleLogin() { currentFilter = document.getElementById('loginTeamSelect').value; document.getElementById('loginView').style.display='none'; document.getElementById('calendarView').style.display='flex'; loadData(); }
@@ -318,8 +236,7 @@
         if(clickCount === 3) {
             authMode = e.ctrlKey ? 'admin' : 'leader';
             updateAuthUI(); if(authMode === 'admin') setFilter('すべて'); else renderAll();
-            alert(authMode==='admin'?"管理者モード起動":"班長モード起動");
-            clickCount = 0;
+            alert(authMode==='admin'?"管理者モード":"班長モード");
         }
         setTimeout(() => clickCount = 0, 2000);
     }
