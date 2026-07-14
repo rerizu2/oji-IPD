@@ -7,20 +7,21 @@
         :root {
             --primary-color: #3b82f6; --bg-color: #f0f2f5; --text-main: #334155;
             --table-header-bg: #e2efda; --table-border: #000;
-            --color-design: #f472b6; /* デザイン班: ピンク */
-            --color-prog: #60a5fa;   /* プログラム班: 青 */
-            --color-robot: #fbbf24;  /* ロボット班: 黄 */
+            --color-design: #f472b6; 
+            --color-prog: #60a5fa;   
+            --color-robot: #fbbf24;  
             --shadow: 0 10px 20px -5px rgba(0, 0, 0, 0.15);
         }
         body { font-family: 'Helvetica Neue', Arial, sans-serif; background-color: var(--bg-color); margin: 0; padding-bottom: 80px; user-select: none; color: var(--text-main); }
+        
+        /* スクロールバー装飾 */
         ::-webkit-scrollbar { width: 6px; }
         ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
 
-        /* --- ログイン --- */
+        /* --- UI構成 --- */
         #loginView { display: flex; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: #1e293b; justify-content: center; align-items: center; z-index: 2000; }
         .login-card { background: white; padding: 40px; border-radius: 24px; text-align: center; width: 320px; box-shadow: 0 25px 50px -12px rgba(0,0,0,0.5); }
 
-        /* --- ヘッダー --- */
         #calendarView { display: none; flex-direction: column; align-items: center; padding: 20px; }
         header { width: 100%; max-width: 1000px; display: flex; justify-content: space-between; align-items: center; margin-bottom: 30px; }
         .brand-title h1 { margin: 0; font-size: 1.8rem; color: var(--primary-color); cursor: help; }
@@ -32,19 +33,30 @@
         .calendar-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 15px; width: 100%; max-width: 1000px; }
         .weekday-label { text-align: center; font-size: 0.75rem; color: #94a3b8; font-weight: bold; padding-bottom: 5px; }
         .day-tile { 
-            background: white; height: 140px; border-radius: 20px; padding: 12px; box-shadow: var(--shadow); 
+            background: white; height: 145px; border-radius: 20px; padding: 12px; box-shadow: var(--shadow); 
             border: 2px solid transparent; transition: 0.2s; display: flex; flex-direction: column; overflow: hidden;
         }
         .can-edit .day-tile { cursor: pointer; }
         .day-tile.today { border: 2px solid var(--primary-color); background: #f0f7ff; }
         .day-number { font-weight: bold; font-size: 1.1rem; margin-bottom: 5px; color: #475569; }
         
-        .shift-container { flex-grow: 1; overflow-y: auto; display: flex; flex-direction: column; gap: 2px; }
-        .shift-item { padding: 2px 8px; border-radius: 5px; color: white; font-size: 0.7rem; font-weight: bold; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .shift-container { flex-grow: 1; overflow-y: auto; display: flex; flex-direction: column; gap: 3px; }
+        .shift-item { padding: 2px 8px; border-radius: 6px; color: white; font-size: 0.7rem; font-weight: bold; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        
+        /* 画像再現：部活確定日バッジ */
+        .bg-common { 
+            background-color: #fbbf24 !important; 
+            color: white !important; 
+            font-size: 0.8rem; 
+            text-align: center;
+            border-radius: 10px;
+            padding: 4px 0;
+            margin-bottom: 4px;
+            flex-shrink: 0;
+        }
         .bg-design { background-color: var(--color-design) !important; }
         .bg-prog { background-color: var(--color-prog) !important; }
         .bg-robot { background-color: var(--color-robot) !important; }
-        .bg-common { background-color: #ffb74d !important; border: 1px solid #f57c00; } /* 確定日の色 */
 
         /* --- フィルター --- */
         .filter-container { margin-bottom: 25px; display: flex; gap: 12px; }
@@ -53,25 +65,27 @@
         .filter-btn.active[data-team="プログラム班"] { background: var(--color-prog); color: white; }
         .filter-btn.active[data-team="ロボット班"] { background: var(--color-robot); color: white; }
         .filter-btn.active[data-team="すべて"] { background: #334155; color: white; }
-        #allViewBtn { display: none; } /* 初期状態は非表示 */
+        #allViewBtn { display: none; }
 
-        /* --- 名簿セクション --- */
+        /* --- 名簿セクション (管理者限定) --- */
         .member-section { display: none; width: 100%; max-width: 1000px; margin-top: 50px; }
         .mode-admin .member-section { display: block; }
-        .team-banner { width: 100%; height: 60px; border-radius: 15px; color: white; font-weight: bold; display: flex; justify-content: center; align-items: center; font-size: 1.1rem; margin-bottom: 15px; box-shadow: var(--shadow); }
+        .member-lists-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; }
+        .team-banner { width: 100%; height: 60px; border-radius: 15px; color: white; font-weight: bold; display: flex; justify-content: center; align-items: center; margin-bottom: 15px; box-shadow: var(--shadow); }
+        .member-scroll-box { max-height: 400px; overflow-y: auto; padding-right: 5px; }
         .member-card { background: white; margin-bottom: 8px; padding: 12px; border-radius: 12px; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 2px 4px rgba(0,0,0,0.05); }
+        .op-icon { cursor: pointer; padding: 4px 8px; background: #f1f5f9; border-radius: 6px; font-size: 0.8rem; }
 
         /* --- モーダル --- */
         #modalOverlay, #memberEditOverlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); backdrop-filter: blur(4px); justify-content: center; align-items: center; z-index: 3000; }
-        .modal-content { background: white; border-radius: 20px; width: 95%; max-width: 500px; max-height: 90vh; overflow-y: auto; box-shadow: 0 25px 50px -12px rgba(0,0,0,0.3); }
+        .modal-content { background: white; border-radius: 20px; width: 95%; max-width: 500px; max-height: 90vh; display: flex; flex-direction: column; overflow: hidden; box-shadow: 0 25px 50px -12px rgba(0,0,0,0.3); }
+        .modal-body-scroll { flex-grow: 1; overflow-y: auto; }
         .attendance-table { width: 100%; border-collapse: collapse; }
-        .attendance-table th, .attendance-table td { border: 1px solid var(--table-border); padding: 10px; text-align: center; }
+        .attendance-table th, .attendance-table td { border: 1px solid var(--table-border); padding: 12px; text-align: center; }
+        .modal-footer { padding: 15px 25px; background: #f8fafc; display: flex; justify-content: flex-end; gap: 10px; border-top: 1px solid #f1f5f9; }
         
-        /* 画像再現の確定日バッジ */
-        .common-badge { background: #fbbf24; color: white; padding: 2px 8px; border-radius: 5px; font-size: 0.75rem; font-weight: bold; display: inline-block; }
-
         .btn-ui { border: none; padding: 10px 20px; border-radius: 10px; cursor: pointer; font-weight: bold; }
-        .input-ui { width: 100%; padding: 12px; margin-top: 5px; margin-bottom: 15px; border: 1px solid #e2e8f0; border-radius: 10px; box-sizing: border-box; }
+        .input-ui { width: 100%; padding: 12px; margin-top: 5px; margin-bottom: 15px; border: 1px solid #e2e8f0; border-radius: 10px; box-sizing: border-box; font-size: 1rem; }
     </style>
 </head>
 <body id="mainBody">
@@ -116,10 +130,10 @@
 
     <div class="member-section">
         <h2>部員名簿管理</h2>
-        <div style="display:grid; grid-template-columns: repeat(3, 1fr); gap: 20px;">
-            <div><div class="team-banner bg-design">デザイン班</div><div id="list-design"></div><button class="btn-ui" style="width:100%; border:2px dashed #ccc; background:none; color:#888;" onclick="openMemberModal('デザイン班')">＋新規追加</button></div>
-            <div><div class="team-banner bg-prog">プログラム班</div><div id="list-prog"></div><button class="btn-ui" style="width:100%; border:2px dashed #ccc; background:none; color:#888;" onclick="openMemberModal('プログラム班')">＋新規追加</button></div>
-            <div><div class="team-banner bg-robot">ロボット班</div><div id="list-robot"></div><button class="btn-ui" style="width:100%; border:2px dashed #ccc; background:none; color:#888;" onclick="openMemberModal('ロボット班')">＋新規追加</button></div>
+        <div class="member-lists-grid">
+            <div><div class="team-banner bg-design">デザイン班</div><div id="list-design" class="member-scroll-box"></div><button class="btn-ui" style="width:100%; border:2px dashed #ccc; background:none; color:#888; margin-top:10px;" onclick="openMemberModal('デザイン班')">＋新規追加</button></div>
+            <div><div class="team-banner bg-prog">プログラム班</div><div id="list-prog" class="member-scroll-box"></div><button class="btn-ui" style="width:100%; border:2px dashed #ccc; background:none; color:#888; margin-top:10px;" onclick="openMemberModal('プログラム班')">＋新規追加</button></div>
+            <div><div class="team-banner bg-robot">ロボット班</div><div id="list-robot" class="member-scroll-box"></div><button class="btn-ui" style="width:100%; border:2px dashed #ccc; background:none; color:#888; margin-top:10px;" onclick="openMemberModal('ロボット班')">＋新規追加</button></div>
         </div>
     </div>
 </div>
@@ -127,37 +141,37 @@
 <!-- 出席簿モーダル -->
 <div id="modalOverlay">
     <div class="modal-content">
-        <table class="attendance-table">
+        <table style="width:100%; border-collapse: collapse; flex-shrink: 0;">
             <thead>
-                <tr>
-                    <th style="background:white; border:1px solid #000;">部活確定日</th>
-                    <th colspan="2" id="modalDateLabel" style="background:var(--table-header-bg); border:1px solid #000;">日付</th>
-                </tr>
-                <tr style="background:#f1f5f9;">
-                    <th style="border:1px solid #000; text-align:left;">
-                        <span class="common-badge">各班</span> 共通ステータス
+                <tr><th style="padding:15px; border:1px solid #000; width:40%;">部活確定日</th><th id="modalDateLabel" style="background:var(--table-header-bg); border:1px solid #000;">日付</th></tr>
+                <tr style="background:#fffbeb;">
+                    <th style="border:1px solid #000; text-align:left; padding-left:20px;">
+                        <span style="background:#fbbf24; color:white; padding:2px 8px; border-radius:5px; font-size:0.75rem; margin-right:10px;">各班</span> 全班共通
                     </th>
-                    <th style="border:1px solid #000;">クラス</th>
-                    <th style="border:1px solid #000;">
-                        <input type="checkbox" id="commonStatusCheck" style="width:20px; height:20px;">
+                    <th style="border:1px solid #000; width:80px;">
+                        <input type="checkbox" id="commonStatusCheck" style="width:25px; height:25px; cursor:pointer;">
                     </th>
                 </tr>
             </thead>
-            <tbody id="attendanceList"></tbody>
         </table>
-        <div style="padding:15px; display:flex; justify-content:flex-end; gap:10px; background:#f8fafc;">
+        <div class="modal-body-scroll">
+            <table class="attendance-table">
+                <tbody id="attendanceList"></tbody>
+            </table>
+        </div>
+        <div class="modal-footer">
             <button class="btn-ui" onclick="closeModal()">戻る</button>
             <button id="saveShiftBtn" class="btn-ui" onclick="saveShift()" style="background:#2e7d32; color:white;">保存する</button>
         </div>
     </div>
 </div>
 
-<!-- 名簿編集モーダル -->
-<div id="memberEditOverlay"><div class="modal-content"><div style="padding:25px;"><h3>名簿管理</h3>氏名<input type="text" id="editName" class="input-ui">クラス<input type="text" id="editClass" class="input-ui">班<select id="editTeam" class="input-ui"><option value="デザイン班">デザイン班</option><option value="プログラム班">プログラム班</option><option value="ロボット班">ロボット班</option></select></div><div style="padding:15px; display:flex; justify-content:flex-end; gap:10px; background:#f8fafc;"><button class="btn-ui" onclick="closeMemberModal()">キャンセル</button><button id="memberSaveBtn" class="btn-ui" onclick="saveMember()" style="background:var(--primary-color); color:white;">決定</button></div></div></div>
+<!-- 名簿管理モーダル -->
+<div id="memberEditOverlay"><div class="modal-content"><div style="padding:25px;"><h3>名簿管理</h3>氏名<input type="text" id="editName" class="input-ui">クラス<input type="text" id="editClass" class="input-ui">班<select id="editTeam" class="input-ui"><option value="デザイン班">デザイン班</option><option value="プログラム班">プログラム班</option><option value="ロボット班">ロボット班</option></select></div><div class="modal-footer"><button class="btn-ui" onclick="closeMemberModal()">キャンセル</button><button id="memberSaveBtn" class="btn-ui" onclick="saveMember()" style="background:var(--primary-color); color:white;">決定</button></div></div></div>
 
 <script>
-    // ★ ここにURLを貼る
-    const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbyo8gthJ3shP4TP3EzNbuD1b8BQ3ng9pEy-nz21rYPk1X6nuspfh9RLda7kjgwXhQEm7Q/exec";
+    // ★ 自身のURLを取得
+    const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbw2Qy6cn2TTTnFnv--HnkYYqVHVHkil_vCS5nxbxa-v9BWK7FEBiz5_irRnKubu_yt3Kg/exec";
     const API_URL = SCRIPT_URL + "?api=true";
 
     let members = [], shiftData = {}, currentDate = new Date();
@@ -202,17 +216,21 @@
             const sList = tile.querySelector('.shift-container');
             
             if(shiftData[key]) {
-                shiftData[key].forEach(s => {
-                    // ここで表示条件を判定: 現在の班 or 管理者のすべて表示 or 全班共通データ(共通)
-                    if(s.team === currentFilter || s.team === "共通" || (authMode === 'admin' && currentFilter === 'すべて')) {
+                // 1. 部活確定日を最優先表示
+                shiftData[key].filter(s => s.team === "共通").forEach(s => {
+                    const item = document.createElement('div');
+                    item.className = 'shift-item bg-common';
+                    item.innerText = "部活確定日";
+                    sList.appendChild(item);
+                });
+
+                // 2. 班別シフトの表示
+                shiftData[key].filter(s => s.team !== "共通").forEach(s => {
+                    if(s.team === currentFilter || (authMode === 'admin' && currentFilter === 'すべて')) {
                         const item = document.createElement('div');
-                        let teamCls = "bg-robot";
-                        if(s.team === "デザイン班") teamCls = "bg-design";
-                        else if(s.team === "プログラム班") teamCls = "bg-prog";
-                        else if(s.team === "共通") teamCls = "bg-common";
-                        
+                        const teamCls = s.team === 'デザイン班' ? 'bg-design' : (s.team === 'プログラム班' ? 'bg-prog' : 'bg-robot');
                         item.className = `shift-item ${teamCls}`;
-                        item.innerText = (s.team === "共通") ? `${s.name}日` : s.name; 
+                        item.innerText = s.name; 
                         sList.appendChild(item);
                     }
                 });
@@ -228,7 +246,7 @@
             const c = document.getElementById(ids[i]); c.innerHTML = '';
             members.filter(m => m.team === team).forEach(m => {
                 const div = document.createElement('div'); div.className = 'member-card';
-                div.innerHTML = `<div><b>${m.name}</b> <small>${m.class}</small></div>
+                div.innerHTML = `<div><b>${m.name}</b> <small style="color:#94a3b8">${m.class}</small></div>
                     <div class="member-ops"><span class="op-icon" onclick="openMemberModalEdit('${m.name}')">✎</span><span class="op-icon" onclick="deleteMember('${m.name}')" style="color:red">×</span></div>`;
                 c.appendChild(div);
             });
@@ -258,52 +276,42 @@
         selectedDateKey = key; document.getElementById('modalDateLabel').innerText = dateStr;
         const list = document.getElementById('attendanceList'); list.innerHTML = '';
         
-        // 共通チェックの状態を確認
         const commonCheck = document.getElementById('commonStatusCheck');
         const isCommonActive = shiftData[key] && shiftData[key].some(s => s.team === "共通");
         commonCheck.checked = isCommonActive;
 
         const targets = (authMode === 'admin' && currentFilter === 'すべて') ? members : members.filter(m => m.team === currentFilter);
-        
         targets.forEach(m => {
             const chk = shiftData[key] && shiftData[key].some(s => s.name === m.name);
-            const teamCls = m.team === 'デザイン班' ? 'bg-design' : (m.team === 'プログラム班' ? 'bg-prog' : 'bg-robot');
             const row = document.createElement('tr');
-            row.innerHTML = `<td style="border:1px solid #000; font-weight:bold;">${m.name}</td>
-                <td style="border:1px solid #000; text-align:center;">${m.class}</td>
-                <td style="border:1px solid #000;"><input type="checkbox" class="sc" style="width:22px;height:22px;" data-name="${m.name}" data-class="${m.class}" data-team="${m.team}" ${chk?'checked':''}></td>`;
+            row.innerHTML = `<td style="border:1px solid #000; font-weight:bold; text-align:left; padding-left:20px; width:40%;">${m.name}</td>
+                <td style="border:1px solid #000;">${m.class}</td>
+                <td style="border:1px solid #000; width:80px;"><input type="checkbox" class="sc" style="width:25px;height:25px;cursor:pointer;" data-name="${m.name}" data-class="${m.class}" data-team="${m.team}" ${chk?'checked':''}></td>`;
             list.appendChild(row);
         });
         document.getElementById('modalOverlay').style.display = 'flex';
     }
 
     async function saveShift() {
-        const checked = []; 
-        document.querySelectorAll('.sc:checked').forEach(c => checked.push({name:c.dataset.name, class:c.dataset.class, team:c.dataset.team}));
-        
-        // 共通ステータス（確定日）のチェックを確認
+        const checked = []; document.querySelectorAll('.sc:checked').forEach(c => checked.push({name:c.dataset.name, class:c.dataset.class, team:c.dataset.team}));
         if(document.getElementById('commonStatusCheck').checked) {
-            checked.push({ name: "デザイン班活動", class: "-", team: "共通" });
+            checked.push({ name: "部活確定日", class: "-", team: "共通" });
         }
-
         let list = checked;
         if(authMode === 'leader' && currentFilter !== 'すべて') {
-            // 自分の班と共通以外のデータは維持する
             const others = (shiftData[selectedDateKey] || []).filter(s => s.team !== currentFilter && s.team !== "共通");
             list = [...others, ...checked];
         }
-        
         isProcessing = true;
         const btn = document.getElementById('saveShiftBtn'); btn.innerText = "..."; btn.disabled = true;
         try {
             await fetch(SCRIPT_URL, { method: "POST", body: JSON.stringify({ type:'saveShift', date:selectedDateKey, list:list }) });
             closeModal(); await loadData(); 
-        } catch(e) { alert("保存失敗"); } finally { isProcessing = false; btn.innerText = "保存"; btn.disabled = false; }
+        } catch(e) { alert("保存失敗"); } finally { isProcessing = false; btn.innerText = "保存する"; btn.disabled = false; }
     }
 
     function handleLogin() { currentFilter = document.getElementById('loginTeamSelect').value; document.getElementById('loginView').style.display='none'; document.getElementById('calendarView').style.display='flex'; loadData(); setFilter(currentFilter); }
     function handleLogout() { authMode='view'; updateAuthUI(); document.getElementById('calendarView').style.display='none'; document.getElementById('loginView').style.display='flex'; }
-    
     function handleAuthTrigger(e) {
         clickCount++;
         if(clickCount === 3) {
@@ -313,15 +321,11 @@
         }
         setTimeout(() => clickCount = 0, 2000);
     }
-
     function updateAuthUI() { 
         document.getElementById('mainBody').className = authMode!=='view'?'can-edit mode-'+authMode:''; 
         document.getElementById('statusBadge').innerText = authMode==='admin'?"管理者モード":authMode==='leader'?"班長モード":"閲覧モード"; 
-        // 閲覧、班長の時は「すべて表示」ボタンを非表示にする
-        const allBtn = document.getElementById('allViewBtn');
-        allBtn.style.display = (authMode === 'admin') ? 'inline-block' : 'none';
+        document.getElementById('allViewBtn').style.display = (authMode === 'admin') ? 'inline-block' : 'none';
     }
-
     function setFilter(t) { currentFilter = t; document.querySelectorAll('.filter-btn').forEach(b => b.classList.toggle('active', b.dataset.team === t)); renderAll(); }
     function closeModal() { document.getElementById('modalOverlay').style.display='none'; }
     function closeMemberModal() { document.getElementById('memberEditOverlay').style.display='none'; }
