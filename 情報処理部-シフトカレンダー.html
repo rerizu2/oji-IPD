@@ -40,17 +40,22 @@
         /* --- シフトアイテムの色 --- */
         .shift-container { flex-grow: 1; overflow-y: auto; display: flex; flex-direction: column; gap: 2px; }
         .shift-item { padding: 1px 6px; border-radius: 4px; color: white; font-size: 0.7rem; font-weight: bold; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        
+        /* クラス名を整理 */
         .bg-design { background-color: var(--color-design) !important; }
         .bg-prog { background-color: var(--color-prog) !important; }
         .bg-robot { background-color: var(--color-robot) !important; }
 
+        /* --- フィルター --- */
         .filter-container { margin-bottom: 20px; display: flex; gap: 10px; }
         .filter-btn { border: none; padding: 8px 18px; border-radius: 20px; cursor: pointer; background: white; font-weight: bold; box-shadow: var(--shadow); }
         .filter-btn.active[data-team="デザイン班"] { background: var(--color-design); color: white; }
         .filter-btn.active[data-team="プログラミング班"] { background: var(--color-prog); color: white; }
         .filter-btn.active[data-team="ロボット班"] { background: var(--color-robot); color: white; }
         .filter-btn.active[data-team="すべて"] { background: #334155; color: white; }
-        #allViewBtn { display: none; } .mode-admin #allViewBtn { display: inline-block; }
+        
+        /* 管理者でなくても「すべて」を見れるように設定 */
+        #allViewBtn { display: inline-block; } 
 
         /* --- 名簿セクション --- */
         .member-section { display: none; width: 100%; max-width: 1000px; margin-top: 50px; }
@@ -137,7 +142,7 @@
             const data = await res.json();
             shiftData = {};
             data.shifts.forEach(s => {
-                const cleanDate = s.date.trim(); // スプレッドシートからの日付文字列
+                const cleanDate = s.date.trim(); 
                 if(!shiftData[cleanDate]) shiftData[cleanDate]=[];
                 shiftData[cleanDate].push(s);
             });
@@ -146,7 +151,7 @@
         } catch(e) { console.error("Data Load Error", e); }
     }
 
-    setInterval(loadData, 15000);
+    setInterval(loadData, 15000); // 15秒ごとに同期
 
     function renderAll() { renderCalendar(); renderMemberLists(); }
 
@@ -161,7 +166,6 @@
         for(let i=0; i<firstDay; i++) container.appendChild(document.createElement('div'));
 
         for(let d=1; d<=lastDate; d++) {
-            // スプレッドシートの形式に合わせてキーを作成 (例: 2026/7/17)
             const key = `${y}/${m+1}/${d}`;
             const tile = document.createElement('div');
             tile.className = 'day-tile' + (new Date(y,m,d).toDateString()===new Date().toDateString()?' today':'');
@@ -170,6 +174,7 @@
             
             if(shiftData[key]) {
                 shiftData[key].forEach(s => {
+                    // ここが重要：フィルターが「すべて」なら無条件で表示、班指定なら一致する場合のみ表示
                     if(currentFilter === 'すべて' || s.team === currentFilter) {
                         const item = document.createElement('div');
                         let teamClass = "bg-robot";
@@ -177,7 +182,8 @@
                         else if(s.team === "プログラミング班") teamClass = "bg-prog";
                         
                         item.className = `shift-item ${teamClass}`;
-                        item.innerText = s.name; sList.appendChild(item);
+                        item.innerText = s.name; 
+                        sList.appendChild(item);
                     }
                 });
             }
@@ -222,13 +228,16 @@
     function openAttendance(key, dateStr) {
         selectedDateKey = key; document.getElementById('modalDateLabel').innerText = dateStr;
         const list = document.getElementById('attendanceList'); list.innerHTML = '';
+        
+        // シフト登録時は「すべて」を選択していても「管理者モード」なら全員表示されるように設定
         const targets = (currentFilter === 'すべて' || authMode === 'admin') ? members : members.filter(m => m.team === currentFilter);
+        
         targets.forEach(m => {
             const chk = shiftData[key] && shiftData[key].some(s => s.name === m.name);
-            const cls = m.team === 'デザイン班' ? 'bg-design' : (m.team === 'プログラミング班' ? 'bg-prog' : 'bg-robot');
+            const teamClass = m.team === 'デザイン班' ? 'bg-design' : (m.team === 'プログラミング班' ? 'bg-prog' : 'bg-robot');
             const row = document.createElement('tr');
             row.innerHTML = `<td style="border:1px solid #000; font-weight:bold;">${m.name}</td>
-                <td style="border:1px solid #000; text-align:center;"><span class="modal-team-label ${cls}">${m.team}</span></td>
+                <td style="border:1px solid #000; text-align:center;"><span class="modal-team-label ${teamClass}">${m.team}</span></td>
                 <td style="border:1px solid #000;">${m.class}</td>
                 <td style="border:1px solid #000;"><input type="checkbox" class="sc" style="width:20px;height:20px;" data-name="${m.name}" data-class="${m.class}" data-team="${m.team}" ${chk?'checked':''}></td>`;
             list.appendChild(row);
@@ -239,10 +248,13 @@
     async function saveShift() {
         const checked = []; document.querySelectorAll('.sc:checked').forEach(c => checked.push({name:c.dataset.name, class:c.dataset.class, team:c.dataset.team}));
         let list = checked;
+        
+        // 班長モード（リーダー）の場合、自分の班以外のデータは維持する
         if(authMode === 'leader' && currentFilter !== 'すべて') {
             const others = (shiftData[selectedDateKey] || []).filter(s => s.team !== currentFilter);
             list = [...others, ...checked];
         }
+        
         isProcessing = true;
         const btn = document.getElementById('saveShiftBtn'); btn.innerText = "..."; btn.disabled = true;
         try {
@@ -257,7 +269,10 @@
         clickCount++;
         if(clickCount === 3) {
             authMode = e.ctrlKey ? 'admin' : 'leader';
-            updateAuthUI(); if(authMode === 'admin') setFilter('すべて'); else renderAll();
+            updateAuthUI(); 
+            // 管理者の場合は自動で「すべて表示」に切り替える
+            if(authMode === 'admin') setFilter('すべて'); 
+            else renderAll();
             clickCount = 0;
         }
         setTimeout(() => clickCount = 0, 2000);
