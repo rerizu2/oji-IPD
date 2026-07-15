@@ -11,17 +11,16 @@
             --color-prog: #60a5fa;   
             --color-robot: #fbbf24;  
             --color-common: #6600FF; /* 全班共有の色：紫色 */
-            --shadow: 0 10px 20px -5px rgba(0, 0, 0, 0.15);
+            --shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
         }
         body { font-family: 'Helvetica Neue', Arial, sans-serif; background-color: var(--bg-color); margin: 0; padding-bottom: 80px; user-select: none; color: var(--text-main); }
         ::-webkit-scrollbar { width: 6px; }
         ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
 
-        /* --- ログイン --- */
+        /* --- UI構成 --- */
         #loginView { display: flex; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: #1e293b; justify-content: center; align-items: center; z-index: 2000; }
         .login-card { background: white; padding: 40px; border-radius: 24px; text-align: center; width: 320px; box-shadow: 0 25px 50px -12px rgba(0,0,0,0.5); }
 
-        /* --- ヘッダー --- */
         #calendarView { display: none; flex-direction: column; align-items: center; padding: 20px; }
         header { width: 100%; max-width: 1000px; display: flex; justify-content: space-between; align-items: center; margin-bottom: 30px; }
         .brand-title h1 { margin: 0; font-size: 1.8rem; color: var(--primary-color); cursor: help; }
@@ -33,18 +32,26 @@
         .calendar-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 15px; width: 100%; max-width: 1000px; }
         .weekday-label { text-align: center; font-size: 0.75rem; color: #94a3b8; font-weight: bold; padding-bottom: 5px; }
         .day-tile { 
-            background: white; height: 145px; border-radius: 20px; padding: 12px; box-shadow: var(--shadow); 
+            background: white; height: 145px; border-radius: 20px; padding: 10px; box-shadow: var(--shadow); 
             border: 2px solid transparent; transition: 0.2s; display: flex; flex-direction: column; overflow: hidden;
         }
-        /* 管理者・班長のみタイルをクリック可能（ただし保存は管理者のみ） */
-        .mode-leader .day-tile, .mode-admin .day-tile { cursor: pointer; }
+        .can-edit .day-tile { cursor: pointer; }
         .day-tile.today { border: 2px solid var(--primary-color); background: #f0f7ff; }
         .day-number { font-weight: bold; font-size: 1.1rem; margin-bottom: 5px; color: #475569; }
         
         .shift-container { flex-grow: 1; overflow-y: auto; display: flex; flex-direction: column; gap: 3px; }
         .shift-item { padding: 2px 8px; border-radius: 6px; color: white; font-size: 0.7rem; font-weight: bold; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
         
-        .bg-common { background-color: var(--color-common) !important; color: white !important; font-size: 0.85rem; text-align: center; border-radius: 10px; padding: 4px 0; margin-bottom: 4px; flex-shrink: 0; }
+        .bg-common { 
+            background-color: var(--color-common) !important; 
+            color: white !important; 
+            font-size: 0.85rem; 
+            text-align: center;
+            border-radius: 10px;
+            padding: 4px 0;
+            margin-bottom: 4px;
+            flex-shrink: 0;
+        }
         .bg-design { background-color: var(--color-design) !important; }
         .bg-prog { background-color: var(--color-prog) !important; }
         .bg-robot { background-color: var(--color-robot) !important; }
@@ -72,11 +79,16 @@
         .modal-content { background: white; border-radius: 20px; width: 95%; max-width: 500px; max-height: 90vh; overflow: hidden; box-shadow: 0 25px 50px -12px rgba(0,0,0,0.3); display: flex; flex-direction: column; }
         .modal-body-scroll { flex-grow: 1; overflow-y: auto; }
         .attendance-table { width: 100%; border-collapse: collapse; }
-        .attendance-table th, .attendance-table td { border: 1px solid var(--table-border); padding: 15px; text-align: center; }
+        .attendance-table th, .attendance-table td { border: 1px solid var(--table-border); padding: 12px; text-align: center; }
         .modal-footer { padding: 15px 25px; background: #f8fafc; display: flex; justify-content: flex-end; gap: 10px; border-top: 1px solid #f1f5f9; }
         
         .btn-ui { border: none; padding: 10px 20px; border-radius: 10px; cursor: pointer; font-weight: bold; }
         .input-ui { width: 100%; padding: 12px; margin-top: 5px; margin-bottom: 15px; border: 1px solid #e2e8f0; border-radius: 10px; box-sizing: border-box; font-size: 1rem; }
+        .modal-team-label { font-size: 0.7rem; padding: 2px 6px; border-radius: 4px; color: white; font-weight: bold; }
+
+        /* 共通チェック行の操作制限スタイル */
+        .row-common-lock { background: #f8f8f8 !important; cursor: not-allowed; }
+        .row-common-lock input { cursor: not-allowed; opacity: 0.6; }
     </style>
 </head>
 <body id="mainBody">
@@ -129,13 +141,12 @@
     </div>
 </div>
 
-<!-- シフトモーダル -->
 <div id="modalOverlay">
     <div class="modal-content">
         <table style="width:100%; border-collapse: collapse; flex-shrink: 0;">
             <thead>
                 <tr><th style="padding:15px; border:1px solid #000; width:40%;">部活確定日</th><th id="modalDateLabel" style="background:var(--table-header-bg); border:1px solid #000;">日付</th></tr>
-                <tr style="background:#f5f3ff;">
+                <tr id="commonStatusRow" style="background:#f5f3ff;">
                     <th style="border:1px solid #000; text-align:left; padding-left:20px;">
                         <span style="background:var(--color-common); color:white; padding:2px 8px; border-radius:5px; font-size:0.75rem; margin-right:10px;">各班</span> 全班共通
                     </th>
@@ -151,19 +162,16 @@
             </table>
         </div>
         <div class="modal-footer">
-            <div id="editNotice" style="margin-right:auto; color:red; font-size:0.8rem; display:none;">※管理者のみ編集可能です</div>
             <button class="btn-ui" onclick="closeModal()">戻る</button>
             <button id="saveShiftBtn" class="btn-ui" onclick="saveShift()" style="background:#2e7d32; color:white;">保存する</button>
         </div>
     </div>
 </div>
 
-<!-- 名簿管理モーダル -->
 <div id="memberEditOverlay"><div class="modal-content"><div style="padding:25px;"><h3>名簿管理</h3>氏名<input type="text" id="editName" class="input-ui">クラス<input type="text" id="editClass" class="input-ui">班<select id="editTeam" class="input-ui"><option value="デザイン班">デザイン班</option><option value="プログラミング班">プログラミング班</option><option value="ロボット班">ロボット班</option></select></div><div class="modal-footer"><button class="btn-ui" onclick="closeMemberModal()">キャンセル</button><button id="memberSaveBtn" class="btn-ui" onclick="saveMember()" style="background:var(--primary-color); color:white;">決定</button></div></div></div>
 
 <script>
-    // ★ 自身のURLを取得
-    const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbz9QtxvxWqzvdoyNBq-lrg26rxPSy6ySexMWvOx4P9_CwPWu2YBLZ33ufy50I9DMLwCTQ/exec";
+    const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxldV89HB-QoQlxqKJ4abyfGKfUGFRaGZb-TriXykumvEkk-FgPfEAMW6sAVxH9_1c2/exec";
     const API_URL = SCRIPT_URL + "?api=true";
 
     let members = [], shiftData = {}, currentDate = new Date();
@@ -225,16 +233,14 @@
                     }
                 });
             }
-            // 閲覧モード以外（班長・管理者）はモーダルを開ける
             if(authMode !== 'view') tile.onclick = () => openAttendance(key, `${m+1}/${d}`);
             container.appendChild(tile);
         }
     }
 
     function renderMemberLists() {
-        const teams = ["デザイン班", "プログラミング班", "ロボット班"];
-        const ids = ["list-design", "list-prog", "list-robot"];
-        teams.forEach((team, i) => {
+        const t = ["デザイン班", "プログラミング班", "ロボット班"], ids = ["list-design", "list-prog", "list-robot"];
+        t.forEach((team, i) => {
             const c = document.getElementById(ids[i]); if(!c) return;
             c.innerHTML = '';
             members.filter(m => m.team === team).forEach(m => {
@@ -249,40 +255,43 @@
         });
     }
 
-    // --- 名簿管理 (管理者のみ実行可能にガード) ---
-    function openMemberModal(team) { if(authMode!=='admin') return; editingMemberName = null; document.getElementById('editName').value = ""; document.getElementById('editClass').value = ""; document.getElementById('editTeam').value = team; document.getElementById('memberEditOverlay').style.display = 'flex'; }
-    function openMemberModalEdit(name) { if(authMode!=='admin') return; const m = members.find(x => x.name === name); editingMemberName = name; document.getElementById('editName').value = m.name; document.getElementById('editClass').value = m.class; document.getElementById('editTeam').value = m.team; document.getElementById('memberEditOverlay').style.display = 'flex'; }
+    function openMemberModal(team) { editingMemberName = null; document.getElementById('editName').value = ""; document.getElementById('editClass').value = ""; document.getElementById('editTeam').value = team; document.getElementById('memberEditOverlay').style.display = 'flex'; }
+    function openMemberModalEdit(name) { const m = members.find(x => x.name === name); editingMemberName = name; document.getElementById('editName').value = m.name; document.getElementById('editClass').value = m.class; document.getElementById('editTeam').value = m.team; document.getElementById('memberEditOverlay').style.display = 'flex'; }
     
     async function saveMember() {
-        if(authMode!=='admin') return;
         const n = document.getElementById('editName').value.trim();
         if(!n) return alert("氏名を入力してください");
         isProcessing = true;
-        const btn = document.getElementById('memberSaveBtn'); btn.disabled = true;
+        const btn = document.getElementById('memberSaveBtn'); btn.disabled = true; btn.innerText = "...";
         let tempMembers = JSON.parse(JSON.stringify(members));
-        if(editingMemberName) tempMembers = tempMembers.filter(m => m.name !== editingMemberName);
-        tempMembers.push({name:n, class:document.getElementById('editClass').value.trim(), team:document.getElementById('editTeam').value});
+        if(editingMemberName) tempM = tempMembers.filter(m => m.name !== editingMemberName);
+        else tempM = tempMembers;
+        tempM.push({name:n, class:document.getElementById('editClass').value.trim(), team:document.getElementById('editTeam').value});
         try {
-            await fetch(SCRIPT_URL, { method: "POST", body: JSON.stringify({ type: 'saveMembers', members: tempMembers }) });
+            await fetch(SCRIPT_URL, { method: "POST", body: JSON.stringify({ type: 'saveMembers', members: tempM }) });
             closeMemberModal(); await loadData(); 
-        } catch(e) { alert("失敗"); } finally { isProcessing = false; btn.disabled = false; }
+        } catch(e) { alert("失敗"); } finally { isProcessing = false; btn.disabled = false; btn.innerText = "決定"; }
     }
 
-    async function deleteMember(name) { if(authMode!=='admin') return; if(!confirm(`${name}を削除？`)) return; isProcessing = true; await fetch(SCRIPT_URL, { method: "POST", body: JSON.stringify({ type: 'saveMembers', members: members.filter(m => m.name !== name) }) }); await loadData(); isProcessing = false; }
+    async function deleteMember(name) { if(!confirm(`${name}を削除？`)) return; isProcessing = true; await fetch(SCRIPT_URL, { method: "POST", body: JSON.stringify({ type: 'saveMembers', members: members.filter(m => m.name !== name) }) }); await loadData(); isProcessing = false; }
 
-    // --- シフト管理 ---
     function openAttendance(key, dateStr) {
         selectedDateKey = key; document.getElementById('modalDateLabel').innerText = dateStr;
         const list = document.getElementById('attendanceList'); list.innerHTML = '';
-        const commonCheck = document.getElementById('commonStatusCheck');
-        const isCommonActive = shiftData[key] && shiftData[key].some(s => s.team === "共通");
         
-        // 管理者以外は操作不可にする設定
-        const canEdit = (authMode === 'admin');
+        // --- 共通チェックの権限制御 ---
+        const commonCheck = document.getElementById('commonStatusCheck');
+        const commonRow = document.getElementById('commonStatusRow');
+        const isCommonActive = shiftData[key] && shiftData[key].some(s => s.team === "共通");
         commonCheck.checked = isCommonActive;
-        commonCheck.disabled = !canEdit;
-        document.getElementById('saveShiftBtn').style.display = canEdit ? 'block' : 'none';
-        document.getElementById('editNotice').style.display = canEdit ? 'none' : 'block';
+
+        if (authMode === 'admin') {
+            commonCheck.disabled = false;
+            commonRow.classList.remove('row-common-lock');
+        } else {
+            commonCheck.disabled = true;
+            commonRow.classList.add('row-common-lock');
+        }
 
         const targets = (authMode === 'admin' && currentFilter === 'すべて') ? members : members.filter(m => m.team === currentFilter);
         targets.forEach(m => {
@@ -290,29 +299,35 @@
             const row = document.createElement('tr');
             row.innerHTML = `<td style="border:1px solid #000; font-weight:bold; text-align:left; padding-left:20px; width:40%;">${m.name}</td>
                 <td style="border:1px solid #000;">${m.class}</td>
-                <td style="border:1px solid #000; width:80px;"><input type="checkbox" class="sc" ${!canEdit ? 'disabled' : ''} style="width:25px;height:25px;cursor:pointer;" data-name="${m.name}" data-class="${m.class}" data-team="${m.team}" ${chk?'checked':''}></td>`;
+                <td style="border:1px solid #000; width:80px;"><input type="checkbox" class="sc" style="width:25px;height:25px;cursor:pointer;" data-name="${m.name}" data-class="${m.class}" data-team="${m.team}" ${chk?'checked':''}></td>`;
             list.appendChild(row);
         });
         document.getElementById('modalOverlay').style.display = 'flex';
     }
 
     async function saveShift() {
-        if(authMode !== 'admin') return; // 管理者以外は保存不可
         const checked = []; 
         document.querySelectorAll('.sc:checked').forEach(c => checked.push({name:c.dataset.name, class:c.dataset.class, team:c.dataset.team}));
+        
+        // 共通チェックがオンなら追加 (管理者のみ操作可能だが、既存の状態は維持される)
         if(document.getElementById('commonStatusCheck').checked) checked.push({ name: "部活確定日", class: "-", team: "共通" });
         
+        let list = checked;
+        if(authMode === 'leader' && currentFilter !== 'すべて') {
+            const others = (shiftData[selectedDateKey] || []).filter(s => s.team !== currentFilter && s.team !== "共通");
+            list = [...others, ...checked];
+        }
         isProcessing = true;
         const btn = document.getElementById('saveShiftBtn'); btn.innerText = "..."; btn.disabled = true;
         try {
-            await fetch(SCRIPT_URL, { method: "POST", body: JSON.stringify({ type:'saveShift', date:selectedDateKey, list:checked }) });
+            await fetch(SCRIPT_URL, { method: "POST", body: JSON.stringify({ type:'saveShift', date:selectedDateKey, list:list }) });
             closeModal(); await loadData(); 
-        } catch(e) { alert("失敗"); } finally { isProcessing = false; btn.innerText = "保存する"; btn.disabled = false; }
+        } catch(e) { alert("失敗"); } finally { isProcessing = false; btn.innerText = "保存"; btn.disabled = false; }
     }
 
-    // --- 基本システム ---
     function handleLogin() { currentFilter = document.getElementById('loginTeamSelect').value; document.getElementById('loginView').style.display='none'; document.getElementById('calendarView').style.display='flex'; loadData(); setFilter(currentFilter); }
     function handleLogout() { authMode='view'; updateAuthUI(); document.getElementById('calendarView').style.display='none'; document.getElementById('loginView').style.display='flex'; }
+    
     function handleAuthTrigger(e) {
         clickCount++;
         if(clickCount === 3) {
@@ -325,7 +340,8 @@
     function updateAuthUI() { 
         document.getElementById('mainBody').className = authMode!=='view'?'can-edit mode-'+authMode:''; 
         document.getElementById('statusBadge').innerText = authMode==='admin'?"管理者モード":authMode==='leader'?"班長モード":"閲覧モード"; 
-        document.getElementById('allViewBtn').style.display = (authMode === 'admin') ? 'inline-block' : 'none';
+        const allBtn = document.getElementById('allViewBtn');
+        allBtn.style.display = (authMode === 'admin') ? 'inline-block' : 'none';
     }
     function setFilter(t) { currentFilter = t; document.querySelectorAll('.filter-btn').forEach(b => b.classList.toggle('active', b.dataset.team === t)); renderAll(); }
     function closeModal() { document.getElementById('modalOverlay').style.display='none'; }
