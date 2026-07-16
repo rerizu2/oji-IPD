@@ -2,7 +2,9 @@
 <html lang="ja">
 <head>
     <meta charset="UTF-8">
-    <title>情報処理部 リアルタイムシフト管理</title>
+    <title>情報処理部 シフト管理</title>
+    <!-- PDF出力用ライブラリ -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
     <style>
         :root {
             --primary-color: #3b82f6; --bg-color: #f0f2f5; --text-main: #334155;
@@ -10,85 +12,77 @@
             --color-design: #f472b6; 
             --color-prog: #60a5fa;   
             --color-robot: #fbbf24;  
-            --color-common: #6600FF; /* 全班共有の色：紫色 */
+            --color-common: #6600FF; 
             --shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
         }
         body { font-family: 'Helvetica Neue', Arial, sans-serif; background-color: var(--bg-color); margin: 0; padding-bottom: 80px; user-select: none; color: var(--text-main); }
         ::-webkit-scrollbar { width: 6px; }
         ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
 
-        /* --- UI構成 --- */
+        /* --- ログイン --- */
         #loginView { display: flex; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: #1e293b; justify-content: center; align-items: center; z-index: 2000; }
         .login-card { background: white; padding: 40px; border-radius: 24px; text-align: center; width: 320px; box-shadow: 0 25px 50px -12px rgba(0,0,0,0.5); }
 
+        /* --- メイン画面 --- */
         #calendarView { display: none; flex-direction: column; align-items: center; padding: 20px; }
         header { width: 100%; max-width: 1000px; display: flex; justify-content: space-between; align-items: center; margin-bottom: 30px; }
         .brand-title h1 { margin: 0; font-size: 1.8rem; color: var(--primary-color); cursor: help; }
         .status-badge { font-size: 0.8rem; padding: 4px 12px; border-radius: 20px; background: #e2e8f0; color: #64748b; font-weight: bold; }
+        
         .mode-leader .status-badge { background: #fef3c7; color: #d97706; }
         .mode-admin .status-badge { background: #fee2e2; color: #ef4444; }
 
-        /* --- カレンダータイル --- */
-        .calendar-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 15px; width: 100%; max-width: 1000px; }
+        /* --- カレンダー (画像再現) --- */
+        #exportArea { width: 100%; max-width: 1000px; padding: 10px; border-radius: 20px; }
+        .calendar-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 12px; width: 100%; }
         .weekday-label { text-align: center; font-size: 0.75rem; color: #94a3b8; font-weight: bold; padding-bottom: 5px; }
         .day-tile { 
-            background: white; height: 145px; border-radius: 20px; padding: 10px; box-shadow: var(--shadow); 
+            background: white; min-height: 135px; border-radius: 20px; padding: 10px; box-shadow: var(--shadow); 
             border: 2px solid transparent; transition: 0.2s; display: flex; flex-direction: column; overflow: hidden;
         }
         .can-edit .day-tile { cursor: pointer; }
         .day-tile.today { border: 2px solid var(--primary-color); background: #f0f7ff; }
         .day-number { font-weight: bold; font-size: 1.1rem; margin-bottom: 5px; color: #475569; }
         
+        /* --- バッジ --- */
         .shift-container { flex-grow: 1; overflow-y: auto; display: flex; flex-direction: column; gap: 3px; }
-        .shift-item { padding: 2px 8px; border-radius: 6px; color: white; font-size: 0.7rem; font-weight: bold; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .shift-item { padding: 2px 8px; border-radius: 6px; color: white; font-size: 0.75rem; font-weight: bold; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; -webkit-print-color-adjust: exact; }
         
-        .bg-common { 
-            background-color: var(--color-common) !important; 
-            color: white !important; 
-            font-size: 0.85rem; 
-            text-align: center;
-            border-radius: 10px;
-            padding: 4px 0;
-            margin-bottom: 4px;
-            flex-shrink: 0;
-        }
+        .bg-common { background-color: var(--color-common) !important; color: white !important; font-size: 0.85rem; text-align: center; border-radius: 10px; padding: 4px 0; margin-bottom: 4px; flex-shrink: 0; }
         .bg-design { background-color: var(--color-design) !important; }
         .bg-prog { background-color: var(--color-prog) !important; }
         .bg-robot { background-color: var(--color-robot) !important; }
 
         /* --- フィルター --- */
-        .filter-container { margin-bottom: 25px; display: flex; gap: 12px; }
-        .filter-btn { border: none; padding: 10px 24px; border-radius: 25px; cursor: pointer; background: white; font-weight: bold; box-shadow: var(--shadow); transition: 0.2s; }
+        .filter-container { margin-bottom: 20px; display: flex; gap: 10px; }
+        .filter-btn { border: none; padding: 8px 18px; border-radius: 20px; cursor: pointer; background: white; font-weight: bold; box-shadow: var(--shadow); }
         .filter-btn.active[data-team="デザイン班"] { background: var(--color-design); color: white; }
         .filter-btn.active[data-team="プログラミング班"] { background: var(--color-prog); color: white; }
         .filter-btn.active[data-team="ロボット班"] { background: var(--color-robot); color: white; }
         .filter-btn.active[data-team="すべて"] { background: #334155; color: white; }
         #allViewBtn { display: none; }
 
-        /* --- 名簿セクション --- */
+        /* --- ボタン --- */
+        .btn-ui { border: none; padding: 10px 20px; border-radius: 10px; cursor: pointer; font-weight: bold; transition: 0.2s; }
+        .btn-pdf { background: #0ea5e9; color: white; display: none; margin-left: 10px; }
+        .mode-admin .btn-pdf { display: inline-block; }
+
+        /* 名簿セクション */
         .member-section { display: none; width: 100%; max-width: 1000px; margin-top: 50px; }
         .mode-admin .member-section { display: block; }
         .member-lists-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; }
         .team-banner { width: 100%; height: 60px; border-radius: 15px; color: white; font-weight: bold; display: flex; justify-content: center; align-items: center; margin-bottom: 15px; box-shadow: var(--shadow); }
-        .member-scroll-box { max-height: 400px; overflow-y: auto; padding-right: 5px; }
         .member-card { background: white; margin-bottom: 8px; padding: 12px; border-radius: 12px; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 2px 4px rgba(0,0,0,0.05); }
         .op-icon { cursor: pointer; padding: 4px 8px; background: #f1f5f9; border-radius: 6px; font-size: 0.8rem; }
 
-        /* --- モーダル --- */
+        /* モーダル */
         #modalOverlay, #memberEditOverlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); backdrop-filter: blur(4px); justify-content: center; align-items: center; z-index: 3000; }
         .modal-content { background: white; border-radius: 20px; width: 95%; max-width: 500px; max-height: 90vh; overflow: hidden; box-shadow: 0 25px 50px -12px rgba(0,0,0,0.3); display: flex; flex-direction: column; }
         .modal-body-scroll { flex-grow: 1; overflow-y: auto; }
         .attendance-table { width: 100%; border-collapse: collapse; }
         .attendance-table th, .attendance-table td { border: 1px solid var(--table-border); padding: 12px; text-align: center; }
         .modal-footer { padding: 15px 25px; background: #f8fafc; display: flex; justify-content: flex-end; gap: 10px; border-top: 1px solid #f1f5f9; }
-        
-        .btn-ui { border: none; padding: 10px 20px; border-radius: 10px; cursor: pointer; font-weight: bold; }
         .input-ui { width: 100%; padding: 12px; margin-top: 5px; margin-bottom: 15px; border: 1px solid #e2e8f0; border-radius: 10px; box-sizing: border-box; font-size: 1rem; }
-        .modal-team-label { font-size: 0.7rem; padding: 2px 6px; border-radius: 4px; color: white; font-weight: bold; }
-
-        /* 共通チェック行の操作制限スタイル */
-        .row-common-lock { background: #f8f8f8 !important; cursor: not-allowed; }
-        .row-common-lock input { cursor: not-allowed; opacity: 0.6; }
     </style>
 </head>
 <body id="mainBody">
@@ -117,6 +111,7 @@
                 <button class="btn-ui" style="background:white;" onclick="changeMonth(-1)">←</button>
                 <button class="btn-ui" style="background:white;" onclick="setToday()">今日</button>
                 <button class="btn-ui" style="background:white;" onclick="changeMonth(1)">→</button>
+                <button class="btn-ui btn-pdf" onclick="exportPDF()">PDF保存</button>
                 <button class="btn-ui" style="background:white; color:red; margin-left:10px;" onclick="handleLogout()">終了</button>
             </div>
         </div>
@@ -129,18 +124,22 @@
         <button class="filter-btn" data-team="ロボット班" onclick="setFilter('ロボット班')">ロボット班</button>
     </div>
 
-    <div class="calendar-grid" id="calendarDays"></div>
+    <!-- PDF書き出しエリア -->
+    <div id="exportArea">
+        <div class="calendar-grid" id="calendarDays"></div>
+    </div>
 
     <div class="member-section">
         <h2>部員名簿管理</h2>
         <div class="member-lists-grid">
-            <div><div class="team-banner bg-design">デザイン班</div><div id="list-design" class="member-scroll-box"></div><button class="btn-ui" style="width:100%; border:2px dashed #ccc; background:none; color:#888; margin-top:10px;" onclick="openMemberModal('デザイン班')">＋新規追加</button></div>
-            <div><div class="team-banner bg-prog">プログラミング班</div><div id="list-prog" class="member-scroll-box"></div><button class="btn-ui" style="width:100%; border:2px dashed #ccc; background:none; color:#888; margin-top:10px;" onclick="openMemberModal('プログラミング班')">＋新規追加</button></div>
-            <div><div class="team-banner bg-robot">ロボット班</div><div id="list-robot" class="member-scroll-box"></div><button class="btn-ui" style="width:100%; border:2px dashed #ccc; background:none; color:#888; margin-top:10px;" onclick="openMemberModal('ロボット班')">＋新規追加</button></div>
+            <div><div class="team-banner bg-design">デザイン班</div><div id="list-design"></div><button class="btn-ui" style="width:100%; border:2px dashed #ccc; background:none; color:#888; margin-top:10px;" onclick="openMemberModal('デザイン班')">＋新規追加</button></div>
+            <div><div class="team-banner bg-prog">プログラミング班</div><div id="list-prog"></div><button class="btn-ui" style="width:100%; border:2px dashed #ccc; background:none; color:#888; margin-top:10px;" onclick="openMemberModal('プログラミング班')">＋新規追加</button></div>
+            <div><div class="team-banner bg-robot">ロボット班</div><div id="list-robot"></div><button class="btn-ui" style="width:100%; border:2px dashed #ccc; background:none; color:#888; margin-top:10px;" onclick="openMemberModal('ロボット班')">＋新規追加</button></div>
         </div>
     </div>
 </div>
 
+<!-- モーダル類 (共通チェックのロック機能込み) -->
 <div id="modalOverlay">
     <div class="modal-content">
         <table style="width:100%; border-collapse: collapse; flex-shrink: 0;">
@@ -238,6 +237,31 @@
         }
     }
 
+    // --- PDF書き出し機能 ---
+    function exportPDF() {
+        const element = document.getElementById('exportArea');
+        const monthText = document.getElementById('monthDisplay').innerText;
+        
+        // PDF用のオプション設定
+        const opt = {
+            margin:       [10, 10, 10, 10],
+            filename:     `情報処理部シフト_${monthText}.pdf`,
+            image:        { type: 'jpeg', quality: 0.98 },
+            html2canvas:  { scale: 2, useCORS: true, backgroundColor: '#f0f2f5' },
+            jsPDF:        { unit: 'mm', format: 'a4', orientation: 'landscape' }
+        };
+
+        // 書き出し中の一時的なスタイル調整（スクロールバーを消し、全内容を表示）
+        const containers = document.querySelectorAll('.shift-container');
+        containers.forEach(c => c.style.overflow = 'visible');
+
+        html2pdf().set(opt).from(element).save().then(() => {
+            // スタイルを元に戻す
+            containers.forEach(c => c.style.overflow = 'auto');
+        });
+    }
+
+    // --- 名簿管理 ---
     function renderMemberLists() {
         const t = ["デザイン班", "プログラミング班", "ロボット班"], ids = ["list-design", "list-prog", "list-robot"];
         t.forEach((team, i) => {
@@ -246,10 +270,7 @@
             members.filter(m => m.team === team).forEach(m => {
                 const div = document.createElement('div'); div.className = 'member-card';
                 div.innerHTML = `<div><b>${m.name}</b> <small style="color:#94a3b8">${m.class}</small></div>
-                    <div class="member-ops">
-                        <span class="op-icon" onclick="openMemberModalEdit('${m.name}')">✎</span>
-                        <span class="op-icon" onclick="deleteMember('${m.name}')" style="color:red">×</span>
-                    </div>`;
+                    <div class="member-ops"><span class="op-icon" onclick="openMemberModalEdit('${m.name}')">✎</span><span class="op-icon" onclick="deleteMember('${m.name}')" style="color:red">×</span></div>`;
                 c.appendChild(div);
             });
         });
@@ -264,34 +285,27 @@
         isProcessing = true;
         const btn = document.getElementById('memberSaveBtn'); btn.disabled = true; btn.innerText = "...";
         let tempMembers = JSON.parse(JSON.stringify(members));
-        if(editingMemberName) tempM = tempMembers.filter(m => m.name !== editingMemberName);
-        else tempM = tempMembers;
-        tempM.push({name:n, class:document.getElementById('editClass').value.trim(), team:document.getElementById('editTeam').value});
+        if(editingMemberName) tempMembers = tempMembers.filter(m => m.name !== editingMemberName);
+        tempMembers.push({name:n, class:document.getElementById('editClass').value.trim(), team:document.getElementById('editTeam').value});
         try {
-            await fetch(SCRIPT_URL, { method: "POST", body: JSON.stringify({ type: 'saveMembers', members: tempM }) });
+            await fetch(SCRIPT_URL, { method: "POST", body: JSON.stringify({ type: 'saveMembers', members: tempMembers }) });
             closeMemberModal(); await loadData(); 
         } catch(e) { alert("失敗"); } finally { isProcessing = false; btn.disabled = false; btn.innerText = "決定"; }
     }
 
     async function deleteMember(name) { if(!confirm(`${name}を削除？`)) return; isProcessing = true; await fetch(SCRIPT_URL, { method: "POST", body: JSON.stringify({ type: 'saveMembers', members: members.filter(m => m.name !== name) }) }); await loadData(); isProcessing = false; }
 
+    // --- シフト管理 ---
     function openAttendance(key, dateStr) {
         selectedDateKey = key; document.getElementById('modalDateLabel').innerText = dateStr;
         const list = document.getElementById('attendanceList'); list.innerHTML = '';
-        
-        // --- 共通チェックの権限制御 ---
         const commonCheck = document.getElementById('commonStatusCheck');
         const commonRow = document.getElementById('commonStatusRow');
         const isCommonActive = shiftData[key] && shiftData[key].some(s => s.team === "共通");
         commonCheck.checked = isCommonActive;
 
-        if (authMode === 'admin') {
-            commonCheck.disabled = false;
-            commonRow.classList.remove('row-common-lock');
-        } else {
-            commonCheck.disabled = true;
-            commonRow.classList.add('row-common-lock');
-        }
+        if (authMode === 'admin') { commonCheck.disabled = false; commonRow.style.opacity = "1"; } 
+        else { commonCheck.disabled = true; commonRow.style.opacity = "0.6"; }
 
         const targets = (authMode === 'admin' && currentFilter === 'すべて') ? members : members.filter(m => m.team === currentFilter);
         targets.forEach(m => {
@@ -308,10 +322,7 @@
     async function saveShift() {
         const checked = []; 
         document.querySelectorAll('.sc:checked').forEach(c => checked.push({name:c.dataset.name, class:c.dataset.class, team:c.dataset.team}));
-        
-        // 共通チェックがオンなら追加 (管理者のみ操作可能だが、既存の状態は維持される)
         if(document.getElementById('commonStatusCheck').checked) checked.push({ name: "部活確定日", class: "-", team: "共通" });
-        
         let list = checked;
         if(authMode === 'leader' && currentFilter !== 'すべて') {
             const others = (shiftData[selectedDateKey] || []).filter(s => s.team !== currentFilter && s.team !== "共通");
@@ -337,13 +348,15 @@
         }
         setTimeout(() => clickCount = 0, 2000);
     }
+
     function updateAuthUI() { 
-        document.getElementById('mainBody').className = authMode!=='view'?'can-edit mode-'+authMode:''; 
+        const b = document.getElementById('mainBody');
+        b.className = authMode!=='view'?'can-edit mode-'+authMode:''; 
         document.getElementById('statusBadge').innerText = authMode==='admin'?"管理者モード":authMode==='leader'?"班長モード":"閲覧モード"; 
-        const allBtn = document.getElementById('allViewBtn');
-        allBtn.style.display = (authMode === 'admin') ? 'inline-block' : 'none';
+        document.getElementById('allViewBtn').style.display = (authMode === 'admin') ? 'inline-block' : 'none';
     }
-    function setFilter(t) { currentFilter = t; document.querySelectorAll('.filter-btn').forEach(b => b.classList.toggle('active', b.dataset.team === t)); renderAll(); }
+
+    function setFilter(t) { currentFilter = t; document.querySelectorAll('.filter-btn').forEach(b => b.classList.toggle('active', b.dataset.team === t)); renderCalendar(); }
     function closeModal() { document.getElementById('modalOverlay').style.display='none'; }
     function closeMemberModal() { document.getElementById('memberEditOverlay').style.display='none'; }
     function changeMonth(n) { currentDate.setMonth(currentDate.getMonth()+n); renderAll(); }
